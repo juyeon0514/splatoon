@@ -9,10 +9,7 @@ public class CameraAndMove : MonoBehaviour
     public GameObject cam; 
     public int jumpCount;
     public bool isGround;
-    //public float camera_dist = 0f;
-    //public float camera_width;
-    //public float camera_height;
-    //public float camera_fix = 3f;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -30,13 +27,14 @@ public class CameraAndMove : MonoBehaviour
         Vector2 mousedelta = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")); // 이거 왜 였는지 기억이 잘 안남
         Vector3 camAngle = cameraArm.rotation.eulerAngles; // 요건 이해가 가는데
         float x = camAngle.x - mousedelta.y;//왜 이렇게 했더라 다시 봐야지
+
         if (x < 180f)
         {
             x = Mathf.Clamp(x, -1f, 70f);
         }
         else
         {
-            x = Mathf.Clamp(x, 335f, 361f);
+            x = Mathf.Clamp(x, 325f, 361f);
         }
         cameraArm.rotation = Quaternion.Euler(x, camAngle.y + mousedelta.x, camAngle.z);
     }
