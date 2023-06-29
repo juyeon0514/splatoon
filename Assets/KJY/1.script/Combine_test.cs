@@ -1,16 +1,20 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class Combine_test : MonoBehaviour
 {
+    public static Combine_test instance;
     public Transform cameraArm;
-    public Transform characterBody;
+    public GameObject characterBody;
     public GameObject cam;
+    public MeshRenderer mesh;
     public Rigidbody rb;
 
     public int jumpCount;
     public bool isGround;
+    public bool jumping;
     public float jumpSpeed;
 
     private float camera_dist = 0f;
@@ -19,14 +23,21 @@ public class Combine_test : MonoBehaviour
     Vector3 dir;
 
     public float rotateSpeed;
-
+    Material material;
     // Start is called before the first frame update
+
+    private void Awake()
+    {
+       instance = this;
+    }
     void Start()
     {
-        rb = GetComponentInChildren<Rigidbody>();
         camera_dist = Mathf.Sqrt(camera_width * camera_width + camera_height * camera_height);
         dir = new Vector3(0, camera_height, camera_width).normalized;
+        //material = characterBody.GetComponent<Material>();
         jumpCount = 1;
+        //renderer = characterBody.GetComponent<Renderer>();
+        material = mesh.material;
     }
 
     // Update is called once per frame
@@ -35,7 +46,11 @@ public class Combine_test : MonoBehaviour
         LookAround();
         Move();
         Jump();
-        LimitGroubd();
+        LongJump();
+        if (changeFormPlayer.instance.isHuman == true)
+        {
+            LimitGroubd();
+        }
         //Turn();
     }
 
@@ -45,13 +60,55 @@ public class Combine_test : MonoBehaviour
         Vector3 camAngle = cameraArm.rotation.eulerAngles; // 요건 이해가 가는데
         float x = camAngle.x - mousedelta.y;//왜 이렇게 했더라 다시 봐야지
 
-        if (x < 180f)
+        if (changeFormPlayer.instance.isHuman == true)
         {
-            x = Mathf.Clamp(x, -1f, 70f);
+            if (x < 180f)
+            {
+                x = Mathf.Clamp(x, -1f, 70f);
+                //만약에 x가 70에 점점 가까워지면
+                //이미지에 알파값음 점점 내리고싶
+                if (x > 50)
+                {
+                    float alpha = Mathf.InverseLerp(100f, 50f, x);
+                    Color color = material.color;
+                    color.a = alpha;
+                    material.color = color;
+                }
+                else
+                {
+                    Color color = material.color;
+                    color.a = 1f;
+                    material.color = color;
+                }
+            }
+            else
+            {
+                x = Mathf.Clamp(x, 325f, 361f);
+                if (x < 335)
+                {
+                   float alpha = Mathf.InverseLerp(310f, 361f, x);
+                    Color color = material.color;
+                    color.a = alpha;
+                    material.color = color;
+                }
+                else
+                {
+                    Color color = material.color;
+                    color.a = 1f;
+                    material.color = color;
+                }
+            }
         }
         else
         {
-            x = Mathf.Clamp(x, 325f, 361f);
+            if (x < 180f)
+            {
+                x = Mathf.Clamp(x, -1f, 70f);
+            }
+            else
+            {
+                x = Mathf.Clamp(x, 350f, 361f);
+            }
         }
         cameraArm.rotation = Quaternion.Euler(x, camAngle.y + mousedelta.x, camAngle.z);
     }
@@ -65,11 +122,8 @@ public class Combine_test : MonoBehaviour
             Vector3 lookForward = new Vector3(cameraArm.forward.x, 0f, cameraArm.forward.z).normalized;
             Vector3 lookRight = new Vector3(cameraArm.right.x, 0f, cameraArm.right.z).normalized;
             Vector3 moveDir = lookForward * moveInput.y + lookRight * moveInput.x;
-
-            characterBody.forward = moveDir;
-            //characterBody.forward = lookForward;
+            characterBody.transform.forward = Vector3.Slerp(characterBody.transform.forward, moveDir, 0.05f);
             transform.position += moveDir * Time.deltaTime * 5f;
-            // transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.LookRotation(moveDir), Time.deltaTime * rotateSpeed);
         }
     }
 
@@ -88,6 +142,18 @@ public class Combine_test : MonoBehaviour
             {
                 rb.AddForce(new Vector3(0, 1, 0) * jumpSpeed, ForceMode.Impulse);
                 jumpCount--;
+                jumping = true;
+            }
+        }
+    }
+
+    private void LongJump()
+    {
+        if (Input.GetButton("Jump") && transform.position.y <= 1)
+        {
+            if (isGround == true)
+            {
+                rb.AddForce(new Vector3(0, 1, 0) * jumpSpeed, ForceMode.Acceleration);
             }
         }
     }
@@ -110,11 +176,16 @@ public class Combine_test : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        print("not");
         if (collision.gameObject.tag == "Ground")
         {
             isGround = true;   
             jumpCount = 1;
+            if (changeFormPlayer.instance.isHuman == true)
+            {
+                Vector3 tmp = transform.position;
+                tmp.y = 0;
+                transform.position = tmp;
+            }
         }
         
     }
